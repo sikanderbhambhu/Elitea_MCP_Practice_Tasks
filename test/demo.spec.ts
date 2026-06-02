@@ -1,16 +1,23 @@
 import { test, expect } from '@playwright/test';
 
-test('navigate to EPAM client work page from services menu', async ({ page }) => {
+test('navigate to client work from services and verify header text', async ({ page }) => {
   await page.goto('https://www.epam.com/');
 
-  await page.getByRole('link', { name: 'Services' }).nth(1).click();
-  await page.waitForLoadState('networkidle');
+  const servicesLink = page.locator('a[href="/services"]').first();
+  await servicesLink.waitFor({ state: 'visible', timeout: 10000 });
+  await servicesLink.scrollIntoViewIfNeeded();
+  await servicesLink.evaluate((el) => (el as HTMLAnchorElement).click());
 
-  const clientWorkLink = page.getByRole('link', { name: /Explore Our Client Work|view all case studies/i }).first();
-  await clientWorkLink.scrollIntoViewIfNeeded();
-  await clientWorkLink.click();
-  await page.waitForLoadState('networkidle');
+  await page.waitForURL('**/services', { timeout: 10000 });
 
-  await expect(page.getByText('Client Work')).toBeVisible();
+  const exploreClientWorkLink = page.getByRole('link', { name: 'Explore Our Client Work' });
+  await exploreClientWorkLink.waitFor({ state: 'visible', timeout: 10000 });
+  await exploreClientWorkLink.scrollIntoViewIfNeeded();
+  await Promise.all([
+    page.waitForURL('**/services/client-work', { timeout: 10000 }),
+    exploreClientWorkLink.click(),
+  ]);
+
+  await expect(page.getByRole('heading', { name: 'Client Work' })).toBeVisible();
 });
 
